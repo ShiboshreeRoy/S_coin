@@ -40,6 +40,44 @@
     </ul>
   </div>
 </main>
+
+<% else %>
+<div class="flex flex-col md:flex-row items-center p-6 bg-white/5 backdrop-blur-lg border border-white/20 rounded-3xl shadow-2xl text-gray-200 gap-6 max-w-5xl mx-auto">
+
+  <!-- Image Section -->
+  <div class="flex-shrink-0 w-full md:w-1/3">
+    <%= image_tag 'S_coin.png', alt: "S Coin Wallet", class: "rounded-2xl shadow-xl w-full h-auto object-cover border border-white/20" %>
+  </div>
+
+  <!-- Info Section -->
+  <div class="flex-1 space-y-4">
+    <h2 class="text-2xl md:text-3xl font-bold text-yellow-400">How to use your wallet:</h2>
+    <p class="text-gray-300 text-sm md:text-base">
+      Manage your S Coin assets seamlessly. Connect your wallet to view balances, claim rewards, and perform secure transactions — all powered by Web3 and MetaMask. Track your daily rewards and transaction history with ease.
+    </p>
+    
+    <ul class="list-disc list-inside space-y-2 text-gray-300 text-sm md:text-base">
+      <li>Connect your MetaMask wallet securely.</li>
+      <li>View ETH, S Coin, and other ERC20 token balances live.</li>
+      <li>Claim your daily token reward (once per day).</li>
+      <li>All actions are verified via Web3 signatures.</li>
+      <li>Monitor transaction history in real-time.</li>
+      <li>Receive notifications for new rewards or transactions.</li>
+      <li>Join the S Coin community and access exclusive features.</li>
+    </ul>
+
+    <!-- Conditional Button -->
+    <% if user_signed_in? %>
+      <button class="mt-4 px-6 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl shadow-lg hover:bg-yellow-500 transition">
+        Connect Wallet
+      </button>
+    <% else %>
+      <%= link_to "Join Now", new_user_registration_path, class: "mt-4 px-6 py-3 bg-indigo-500 text-white font-semibold rounded-xl shadow-lg hover:bg-indigo-600 transition" %>
+    <% end %>
+
+  </div>
+</div>
+
 <% end %>
 
 <!-- Ethers.js -->

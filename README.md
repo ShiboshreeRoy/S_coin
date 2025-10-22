@@ -129,7 +129,7 @@ See [`LICENSE`](LICENSE) for more details.
 
 | Wallet Dashboard                                    | Claim Reward                                       |
 | --------------------------------------------------- | -------------------------------------------------- |
-| ![Wallet Dashboard](docs/screenshots/dashboard.png) | ![Claim Reward](docs/screenshots/claim_reward.png) |
+| ![Wallet Dashboard](./app/assets/images/image.png) | ![Claim Reward](./app/assets/images/ww.png) |
 
 ---
 

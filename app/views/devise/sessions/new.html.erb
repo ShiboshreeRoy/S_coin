@@ -1,0 +1,46 @@
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-700 px-4">
+  <div class="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
+    <h2 class="text-3xl font-bold text-center text-white mb-6">
+      Welcome Back to <span class="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-white">S Coin</span>
+    </h2>
+
+    <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "space-y-6" }) do |f| %>
+
+      <!-- Email Field -->
+      <div>
+        <%= f.label :email, class: "block text-sm font-medium text-gray-200 mb-1" %>
+        <%= f.email_field :email,
+              autofocus: true,
+              autocomplete: "email",
+              class: "w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400" %>
+      </div>
+
+      <!-- Password Field -->
+      <div>
+        <%= f.label :password, class: "block text-sm font-medium text-gray-200 mb-1" %>
+        <%= f.password_field :password,
+              autocomplete: "current-password",
+              class: "w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400" %>
+      </div>
+
+      <!-- Remember Me -->
+      <% if devise_mapping.rememberable? %>
+        <div class="flex items-center">
+          <%= f.check_box :remember_me, class: "h-4 w-4 text-yellow-400 border-gray-300 rounded focus:ring-yellow-400" %>
+          <%= f.label :remember_me, class: "ml-2 text-sm text-gray-200" %>
+        </div>
+      <% end %>
+
+      <!-- Submit Button -->
+      <div>
+        <%= f.submit "Log In",
+              class: "w-full py-2 px-4 bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500 text-gray-900 font-semibold rounded-full shadow-lg hover:scale-105 transform transition duration-300" %>
+      </div>
+    <% end %>
+
+    <!-- Links -->
+    <div class="mt-6 text-center text-sm text-gray-200 space-y-1">
+      <%= render "devise/shared/links" %>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,210 @@
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-700 px-4">
+ <% if user_signed_in? %>
+<main class="w-full max-w-5xl flex flex-col md:flex-row gap-6">
+
+  <!-- Wallet Info Card -->
+  <div class=" mt-5 flex-1 p-6 bg-white/5 backdrop-blur-lg border border-white/20 rounded-3xl shadow-2xl flex flex-col gap-4">
+    <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500">
+      Your Wallet
+    </h2>
+
+    <p class="text-gray-300 font-semibold">Wallet Address:</p>
+    <p class="text-cyan-400 font-mono break-all" id="wallet-address">Not connected</p>
+
+    <div id="wallet-info" class="text-gray-200"></div>
+
+    <button id="connect-wallet" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-2 rounded-xl shadow-lg hover:scale-105 transform transition">
+      Connect MetaMask
+    </button>
+
+    <button id="claim-reward" class="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold py-2 rounded-xl shadow-lg hover:scale-105 transform transition hidden opacity-50 cursor-not-allowed">
+      Claim Daily ERC20 Reward
+    </button>
+
+    <p id="countdown" class="text-yellow-400 font-semibold mt-2 text-center"></p>
+
+    <div class="flex justify-between mt-4 text-white font-mono">
+      <p>ETH Balance: <span id="eth-balance">0 ETH</span></p>
+      <p>Token Balance: <span id="token-balance">0 TOKEN</span></p>
+    </div>
+  </div>
+
+  <!-- How to Use Card -->
+  <div class="flex-1 p-6 bg-white/5 backdrop-blur-lg border border-white/20 rounded-3xl shadow-2xl text-gray-200">
+    <h2 class="text-xl font-bold mb-4 text-yellow-400">How to use:</h2>
+    <ul class="list-disc list-inside space-y-2 text-gray-300">
+      <li>Connect your MetaMask wallet.</li>
+      <li>View your ETH and ERC20 token balances live.</li>
+      <li>Claim your daily token reward (once per day).</li>
+      <li>All actions are secured via Web3 and MetaMask signatures.</li>
+    </ul>
+  </div>
+</main>
+<% end %>
+
+<!-- Ethers.js -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.6.4/dist/ethers.umd.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const connectBtn = document.getElementById('connect-wallet');
+  const claimBtn = document.getElementById('claim-reward');
+  const walletAddressEl = document.getElementById('wallet-address');
+  const ethBalanceSpan = document.getElementById('eth-balance');
+  const tokenBalanceSpan = document.getElementById('token-balance');
+  const infoDiv = document.getElementById('wallet-info');
+  const countdownEl = document.getElementById('countdown');
+
+  const tokenAddress = "0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8"; // Replace
+  const tokenABI = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function claim()"
+  ];
+
+  if (!window.ethereum) return alert("Please install MetaMask!");
+
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  let walletAddress = null;
+  let signer = null;
+  let tokenContract = null;
+  let countdownInterval = null;
+
+  function enableClaimButton() {
+    claimBtn.disabled = false;
+    claimBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    claimBtn.classList.add("shadow-lg", "hover:scale-105", "transition-transform");
+  }
+
+  function disableClaimButton() {
+    claimBtn.disabled = true;
+    claimBtn.classList.add("opacity-50", "cursor-not-allowed");
+    claimBtn.classList.remove("shadow-lg", "hover:scale-105");
+  }
+
+  async function updateBalances() {
+    if (!walletAddress || !tokenContract) return;
+    try {
+      const ethBalance = await provider.getBalance(walletAddress);
+      ethBalanceSpan.innerText = ethers.formatEther(ethBalance) + " ETH";
+
+      const tokenBalance = await tokenContract.balanceOf(walletAddress);
+      tokenBalanceSpan.innerText = ethers.formatUnits(tokenBalance, 18) + " TOKEN";
+    } catch(err) {
+      console.error("Balance update error:", err);
+    }
+  }
+
+  async function checkCooldown() {
+    try {
+      const res = await fetch("/wallets/last_claim_time", { 
+        method: "GET", 
+        headers: { "Accept": "application/json" } 
+      });
+
+      if (!res.ok) { disableClaimButton(); countdownEl.innerText = ""; return; }
+
+      const data = await res.json();
+      const lastClaim = data.last_claim_at ? new Date(data.last_claim_at) : null;
+      if (!lastClaim) { enableClaimButton(); countdownEl.innerText = ""; return; }
+
+      const nextClaim = new Date(lastClaim.getTime() + 24*60*60*1000);
+      const now = new Date();
+
+      if (now >= nextClaim) { enableClaimButton(); countdownEl.innerText = ""; }
+      else {
+        disableClaimButton();
+        const diff = nextClaim - now;
+        startCountdown(diff);
+      }
+    } catch(err) {
+      console.error(err);
+      disableClaimButton();
+      countdownEl.innerText = "";
+    }
+  }
+
+  function startCountdown(duration) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    let remaining = duration;
+    countdownInterval = setInterval(() => {
+      if (remaining <= 0) { clearInterval(countdownInterval); enableClaimButton(); countdownEl.innerText = ""; }
+      else {
+        const hours = Math.floor(remaining / (1000*60*60));
+        const minutes = Math.floor((remaining % (1000*60*60)) / (1000*60));
+        const seconds = Math.floor((remaining % (1000*60)) / 1000);
+        countdownEl.innerText = `Next claim in: ${hours}h ${minutes}m ${seconds}s`;
+        remaining -= 1000;
+      }
+    }, 1000);
+  }
+
+  async function connectWallet() {
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    walletAddress = accounts[0];
+    walletAddressEl.innerText = walletAddress;
+    infoDiv.innerText = `Connected: ${walletAddress}`;
+    claimBtn.classList.remove("hidden");
+    connectBtn.classList.add("hidden");
+
+    signer = await provider.getSigner();
+    tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
+
+    await fetch("/wallets/connect", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ address: walletAddress })
+    });
+
+    await updateBalances();
+    await checkCooldown();
+  }
+
+  const accounts = await window.ethereum.request({ method: "eth_accounts" });
+  if (accounts.length > 0) await connectWallet();
+
+  connectBtn?.addEventListener("click", connectWallet);
+
+  claimBtn?.addEventListener("click", async () => {
+    if (!walletAddress || !tokenContract) return alert("Wallet not connected!");
+    try {
+      const res = await fetch("/wallets/claim_reward", { method: "POST", headers: { 
+        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content,
+        "Accept": "application/json" } 
+      });
+
+      if (!res.ok) return alert("Claim failed: Backend error");
+      const data = await res.json();
+      if (data.status === "error") return alert(data.message);
+
+      const tx = await tokenContract.claim();
+      alert("Transaction sent: " + tx.hash);
+      await tx.wait();
+
+      await updateBalances();
+      alert("Reward claimed successfully!");
+      await checkCooldown();
+    } catch(err) { alert("Claim failed: " + err.message); }
+  });
+
+  window.ethereum.on('accountsChanged', async (accounts) => {
+    if (accounts.length === 0) {
+      walletAddress = null;
+      walletAddressEl.innerText = "Not connected";
+      infoDiv.innerText = "";
+      claimBtn.classList.add("hidden");
+      connectBtn.classList.remove("hidden");
+      countdownEl.innerText = "";
+      disableClaimButton();
+    } else { await connectWallet(); }
+  });
+
+  setInterval(async () => {
+    if (walletAddress && tokenContract) await updateBalances();
+  }, 10000);
+});
+</script>
+</div>
